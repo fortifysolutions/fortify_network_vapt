@@ -1,0 +1,17 @@
+modules:
+  - recon.whois_lookup
+  - recon.dns_enum
+  - recon.network_mapping
+  - network.host_discovery
+  - network.port_scan
+  - network.service_detection
+  - network.banner_grab
+  - network.os_detection
+  - network.device_fingerprint
+  - network.snmp_enumeration
+  - network.ssh_audit
+  - network.smb_enum
+  - network.tls_scan
+  - exposure.insecure_protocol_detection
+  - vuln.vuln_scan
+  - reporting.risk_scoring

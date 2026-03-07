@@ -1,0 +1,25 @@
+modules:
+  - recon.whois_lookup
+  - recon.dns_enum
+  - recon.dns_zone_transfer
+  - recon.network_mapping
+  - network.host_discovery
+  - network.port_scan
+  - network.service_detection
+  - network.banner_grab
+  - network.os_detection
+  - network.device_fingerprint
+  - network.snmp_enumeration
+  - network.smb_enum
+  - network.ssh_audit
+  - network.tls_scan
+  - exposure.ldap_enumeration
+  - exposure.ntp_amplification_check
+  - exposure.ipmi_detection
+  - exposure.docker_api_exposure
+  - exposure.kubernetes_api_exposure
+  - exposure.redis_exposure
+  - exposure.mongodb_exposure
+  - exposure.insecure_protocol_detection
+  - vuln.vuln_scan
+  - reporting.risk_scoring

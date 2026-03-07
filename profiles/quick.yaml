@@ -1,0 +1,7 @@
+modules:
+  - recon.whois_lookup
+  - recon.dns_enum
+  - network.host_discovery
+  - network.port_scan
+  - network.service_detection
+  - network.device_fingerprint
