@@ -3,6 +3,7 @@
 import argparse
 import importlib
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from core.config import APP_NAME, VERSION, OUTPUT_DIR
 from core.precheck import run_precheck
@@ -40,6 +41,32 @@ def run_module(mod, target, verbose=False):
     return module.run(target, verbose)
 
 
+def run_batch_module(mod, hosts, verbose=False, max_workers=8):
+    batch = {}
+    errors = 0
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {executor.submit(run_module, mod, host, verbose): host for host in hosts}
+        for future in as_completed(future_map):
+            host = future_map[future]
+            try:
+                result = future.result()
+            except Exception as exc:
+                result = {"error": str(exc)}
+            batch[host] = result
+            if isinstance(result, dict) and "error" in result:
+                errors += 1
+
+    return {
+        "raw": {"batch": batch},
+        "parsed": {
+            "host_count": len(hosts),
+            "errors": errors,
+            "successful": len(hosts) - errors,
+        }
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=APP_NAME)
     parser.add_argument("--target", required=True, help="Domain, IP, or CIDR")
@@ -47,6 +74,7 @@ def main():
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument("--auto-install", action="store_true")
     parser.add_argument("--max-hosts", type=int, default=32)
+    parser.add_argument("--max-workers", type=int, default=8, help="Parallel workers for host-level module execution")
     args = parser.parse_args()
 
     print(f"\n{APP_NAME} v{VERSION}\n")
@@ -69,10 +97,12 @@ def main():
                 discovered = result.get("parsed", {}).get("live_hosts", [])
                 context_hosts = dedupe(discovered or context_hosts)[: max(1, args.max_hosts)]
             elif mod in HOST_BATCH_MODULES:
-                batch = {}
-                for h in context_hosts:
-                    batch[h] = run_module(mod, h, args.verbose)
-                result = {"raw": {"batch": batch}, "parsed": {"host_count": len(context_hosts)}}
+                result = run_batch_module(
+                    mod,
+                    context_hosts,
+                    verbose=args.verbose,
+                    max_workers=max(1, args.max_workers),
+                )
             else:
                 result = run_module(mod, args.target, args.verbose)
 
@@ -83,6 +113,7 @@ def main():
             print(f"[!] Failed: {mod} -> {exc}")
 
     report["summary"]["assessed_hosts"] = context_hosts
+    report["summary"]["max_workers"] = max(1, args.max_workers)
     save_reports(report)
 
 

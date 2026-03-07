@@ -13,13 +13,19 @@ WHOIS + DNS -> Host Discovery -> Fast Port Scan -> Service Detection -> Banner G
 - Routers / Access Points
 - Firewalls
 
+## Key Features
+- Strict precheck (hard fail if any required tool is missing)
+- OUI/MAC vendor-aware device fingerprinting
+- Parallel host-level execution with worker limits
+- Executive CSV summary for audit/compliance
+
 ## Modules Included
 - Recon: WHOIS, DNS enum, DNS zone transfer, traceroute mapping
 - Discovery/Enumeration: host discovery, port scan, service detection, banner grab, OS detection, device fingerprint
 - Infrastructure checks: SNMP, SMB, SSH, TLS
 - Exposure checks: LDAP enum, NTP amplification, IPMI exposure, Docker API, Kubernetes API, Redis, MongoDB, insecure protocols
 - Vulnerability detection: Nmap vuln scripts + Nuclei
-- Risk scoring/reporting: JSON + HTML
+- Risk scoring/reporting: JSON + HTML + CSV
 
 ## Profiles
 - `quick`
@@ -30,7 +36,13 @@ WHOIS + DNS -> Host Discovery -> Fast Port Scan -> Service Detection -> Banner G
 ```bash
 python3 main.py --target 10.10.10.0/24 --profile deep
 python3 main.py --target example.internal --profile standard
+python3 main.py --target 10.10.10.0/24 --profile deep --max-hosts 128 --max-workers 20
 ```
+
+## Output
+- `output/report.json`
+- `output/report.html`
+- `output/executive_summary.csv`
 
 ## Notes
 - Strict precheck is enforced. Missing required tools causes immediate exit.
