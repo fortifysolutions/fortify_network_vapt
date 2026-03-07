@@ -10,7 +10,7 @@ def initialize_report(target, profile):
     return {
         "target": target,
         "profile": profile,
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "modules": {},
         "summary": {}
     }
@@ -72,9 +72,19 @@ def build_executive_rows(report):
     return rows
 
 
-def save_csv_executive_summary(report):
+def _safe_report_stem(report):
+    raw_target = report.get("target", "unknown_target")
+    safe_target = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in str(raw_target))
+    raw_time = report.get("timestamp", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    safe_time = raw_time.replace(":", "-").replace(" ", "_")
+    return f"{safe_target}_{safe_time}"
+
+
+def save_csv_executive_summary(report, filename=None):
     rows = build_executive_rows(report)
-    path = os.path.join(OUTPUT_DIR, "executive_summary.csv")
+    if not filename:
+        filename = f"{_safe_report_stem(report)}_executive_summary.csv"
+    path = os.path.join(OUTPUT_DIR, filename)
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(
             f,
@@ -92,8 +102,9 @@ def save_reports(report):
     report["summary"]["risk_score"] = score
     report["summary"]["severity"] = sev
 
-    json_path = os.path.join(OUTPUT_DIR, "report.json")
-    html_path = os.path.join(OUTPUT_DIR, "report.html")
+    stem = _safe_report_stem(report)
+    json_path = os.path.join(OUTPUT_DIR, f"{stem}.json")
+    html_path = os.path.join(OUTPUT_DIR, f"{stem}.html")
     csv_path = save_csv_executive_summary(report)
 
     with open(json_path, "w", encoding="utf-8") as f:
@@ -113,4 +124,4 @@ def save_reports(report):
     with open(html_path, "w", encoding="utf-8") as f:
         f.write("\n".join(body))
 
-    print("[+] Reports saved: output/report.json, output/report.html, output/executive_summary.csv")
+    print(f"[+] Reports saved: {json_path}, {html_path}, {csv_path}")
