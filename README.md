@@ -37,6 +37,7 @@ WHOIS + DNS -> Host Discovery -> Fast Port Scan -> Service Detection -> Banner G
 python3 main.py --target 10.10.10.0/24 --profile deep
 python3 main.py --target example.internal --profile standard
 python3 main.py --target 10.10.10.0/24 --profile deep --max-hosts 128 --max-workers 20
+python3 main.py --target portal.internal --profile deep --cookie "sessionid=abc123" --auth-header "Bearer eyJ..."
 ```
 
 ## Output

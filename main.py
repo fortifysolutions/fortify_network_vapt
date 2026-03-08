@@ -36,17 +36,20 @@ def dedupe(items):
     return list(dict.fromkeys([x for x in items if x]))
 
 
-def run_module(mod, target, verbose=False):
+def run_module(mod, target, verbose=False, config=None):
     module = importlib.import_module(f"modules.{mod}")
-    return module.run(target, verbose)
+    try:
+        return module.run(target, verbose, config=config)
+    except TypeError:
+        return module.run(target, verbose)
 
 
-def run_batch_module(mod, hosts, verbose=False, max_workers=8):
+def run_batch_module(mod, hosts, verbose=False, max_workers=8, config=None):
     batch = {}
     errors = 0
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_map = {executor.submit(run_module, mod, host, verbose): host for host in hosts}
+        future_map = {executor.submit(run_module, mod, host, verbose, config): host for host in hosts}
         for future in as_completed(future_map):
             host = future_map[future]
             try:
@@ -75,6 +78,8 @@ def main():
     parser.add_argument("--auto-install", action="store_true")
     parser.add_argument("--max-hosts", type=int, default=32)
     parser.add_argument("--max-workers", type=int, default=8, help="Parallel workers for host-level module execution")
+    parser.add_argument("--cookie", default="", help="Session cookie for authenticated HTTP-based checks")
+    parser.add_argument("--auth-header", default="", help="Authorization header value (example: Bearer <token>)")
     args = parser.parse_args()
 
     print(f"\n{APP_NAME} v{VERSION}\n")
@@ -90,10 +95,15 @@ def main():
     report = initialize_report(args.target, args.profile)
     context_hosts = [args.target]
 
+    module_config = {
+        "cookie": args.cookie,
+        "auth_header": args.auth_header,
+    }
+
     for mod in modules:
         try:
             if mod == "network.host_discovery":
-                result = run_module(mod, args.target, args.verbose)
+                result = run_module(mod, args.target, args.verbose, config=module_config)
                 discovered = result.get("parsed", {}).get("live_hosts", [])
                 context_hosts = dedupe(discovered or context_hosts)[: max(1, args.max_hosts)]
             elif mod in HOST_BATCH_MODULES:
@@ -102,9 +112,10 @@ def main():
                     context_hosts,
                     verbose=args.verbose,
                     max_workers=max(1, args.max_workers),
+                    config=module_config,
                 )
             else:
-                result = run_module(mod, args.target, args.verbose)
+                result = run_module(mod, args.target, args.verbose, config=module_config)
 
             report["modules"][mod] = result
             print(f"[+] Completed: {mod}")
